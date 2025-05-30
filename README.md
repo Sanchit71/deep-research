@@ -6,6 +6,12 @@ An AI-powered research tool in Python that helps you explore topics in depth usi
 
 ⭐ A python port with a little more cli pizzazz of [https://github.com/dzhng/deep-research](https://github.com/dzhng/deep-research)
 
+⭐ Add support for gemini and google serp api (`https://serper.dev/`).
+
+⭐ Add a evaluation step after each epoch rather than wholly based on depth param
+
+⭐ Tweak some prompts with more logs for debugging
+
 Contribute all you want to this. It was fun tweaking it.
 
 [video demo](https://app.arcade.software/share/e6N8mBQlAMbdc0dmOuS1)
