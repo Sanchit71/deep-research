@@ -4,7 +4,7 @@ An AI-powered research tool in Python that helps you explore topics in depth usi
 
 ## Save 200 dollars a month and use this tool
 
-⭐ A python port with a little more cli pizzazz of [https://github.com/dzhng/deep-research](https://github.com/dzhng/deep-research)
+⭐ A python port with a little more cli pizzazz of [https://github.com/epuerta9/deep-research-py](https://github.com/epuerta9/deep-research-py)
 
 ⭐ Add support for gemini and google serp api (`https://serper.dev/`).
 
