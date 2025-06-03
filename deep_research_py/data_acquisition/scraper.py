@@ -4,6 +4,11 @@ from typing import Dict, Any, Optional
 from deep_research_py.utils import logger
 from abc import ABC, abstractmethod
 from playwright.async_api import async_playwright, Browser, BrowserContext, TimeoutError
+import requests
+from bs4 import BeautifulSoup
+import asyncio
+import aiohttp
+from urllib.parse import urljoin, urlparse
 
 # ---- Data Models ----
 
@@ -257,3 +262,149 @@ class PlaywrightScraper:
             return ScrapedContent(
                 url=url, html="", text="", status_code=0, metadata={"error": str(e)}
             )
+
+class RequestsScraper:
+    """Requests + BeautifulSoup-based scraper implementation using synchronous requests."""
+
+    def __init__(
+        self,
+        timeout: int = 30,
+        max_retries: int = 3,
+        user_agent: Optional[str] = None,
+    ):
+        self.timeout = timeout
+        self.max_retries = max_retries
+        self.user_agent = user_agent
+        
+        # Use the exact User-Agent from your working code as default
+        self.default_user_agent = (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/114.0.0.0 Safari/537.36"
+        )
+
+    async def setup(self):
+        """Setup method for compatibility - no session needed for requests."""
+        logger.info(f"RequestsScraper initialized with synchronous requests")
+
+    async def teardown(self):
+        """Teardown method for compatibility - no cleanup needed for requests."""
+        logger.info("RequestsScraper teardown complete")
+
+    def _extract_text_content(self, soup: BeautifulSoup, url: str) -> str:
+        """
+        Extract text content similar to document.body.innerText
+        """
+        # Remove non-visible content
+        for element in soup(["script", "style", "noscript", "meta", "link"]):
+            element.decompose()
+        
+        # Remove navigation and non-content elements
+        for element in soup.find_all(["nav", "header", "footer", "aside"]):
+            element.decompose()
+        
+        # Find main content or use body - prioritize PMC's maincontent
+        main_content = (
+            soup.find(id="maincontent") or  # PMC specific
+            soup.find("main") or 
+            soup.find("article") or 
+            soup.find(class_="main-content") or
+            soup.find("body") or 
+            soup
+        )
+        
+        # Extract text similar to innerText - simple and clean
+        text = main_content.get_text(separator='\n', strip=True)
+        
+        # Clean up excessive whitespace (like innerText does)
+        import re
+        text = re.sub(r'\n\s*\n\s*\n+', '\n\n', text)  # Max 2 consecutive newlines
+        text = re.sub(r'[ \t]+', ' ', text)  # Normalize spaces
+        
+        return text.strip()
+
+    async def scrape(self, url: str, **kwargs) -> ScrapedContent:
+        """Scrape a URL using synchronous requests + BeautifulSoup (like your working code)."""
+        logger.info(f"🌐 Scraping URL with RequestsScraper (sync): {url}")
+        
+        # Use the exact same headers as your working code
+        headers = {
+            "User-Agent": self.user_agent or self.default_user_agent
+        }
+        
+        for attempt in range(self.max_retries):
+            try:
+                # Add random delay to avoid being detected as bot
+                if attempt > 0:
+                    delay = random.uniform(1, 3)
+                    logger.debug(f"Retry attempt {attempt + 1}, waiting {delay:.1f}s")
+                    await asyncio.sleep(delay)
+                
+                # Use synchronous requests in a thread pool to keep it async
+                loop = asyncio.get_event_loop()
+                response = await loop.run_in_executor(
+                    None, 
+                    lambda: requests.get(url, headers=headers, timeout=self.timeout)
+                )
+                
+                # Check status
+                status_code = response.status_code
+                
+                if status_code >= 400:
+                    logger.warning(f"HTTP {status_code} for {url}")
+                    if attempt < self.max_retries - 1:
+                        continue
+                
+                # Get content
+                html = response.text
+                response_headers = dict(response.headers)
+                
+                logger.debug(f"Retrieved {len(html)} characters from {url}")
+                
+                # Parse with BeautifulSoup
+                soup = BeautifulSoup(html, "html.parser")
+                
+                # Extract title
+                title_tag = soup.find("title")
+                title = title_tag.get_text(strip=True) if title_tag else ""
+                
+                # Extract clean text content
+                text = self._extract_text_content(soup, url)
+                
+                logger.info(f"✅ Successfully scraped {url}")
+                logger.debug(f"   Title: {title}")
+                logger.debug(f"   Text length: {len(text)} characters")
+                logger.debug(f"   Status code: {status_code}")
+                
+                return ScrapedContent(
+                    url=url,
+                    html=html,
+                    text=text,
+                    status_code=status_code,
+                    metadata={
+                        "title": title,
+                        "headers": response_headers,
+                        "scraper": "RequestsScraper",
+                        "attempt": attempt + 1,
+                    },
+                )
+                
+            except requests.exceptions.Timeout:
+                logger.warning(f"Timeout scraping {url} (attempt {attempt + 1})")
+                if attempt < self.max_retries - 1:
+                    continue
+                    
+            except Exception as e:
+                logger.error(f"Error scraping {url} (attempt {attempt + 1}): {str(e)}")
+                if attempt < self.max_retries - 1:
+                    continue
+        
+        # All attempts failed
+        logger.error(f"❌ Failed to scrape {url} after {self.max_retries} attempts")
+        return ScrapedContent(
+            url=url, 
+            html="", 
+            text="", 
+            status_code=0, 
+            metadata={"error": f"Failed after {self.max_retries} attempts", "scraper": "RequestsScraper"}
+        )

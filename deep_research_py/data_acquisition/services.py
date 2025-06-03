@@ -7,6 +7,7 @@ from deep_research_py.utils import logger
 from firecrawl import FirecrawlApp
 from .manager import SearchAndScrapeManager
 from .search import SerperSearchEngine
+from .scraper import RequestsScraper
 from dotenv import load_dotenv
 
 # Ensure .env is loaded
@@ -19,6 +20,8 @@ class SearchServiceType(Enum):
     FIRECRAWL = "firecrawl"
     PLAYWRIGHT_DDGS = "playwright_ddgs"
     PLAYWRIGHT_SERPER = "playwright_serper"
+    REQUESTS_DDGS = "requests_ddgs"
+    REQUESTS_SERPER = "requests_serper"
 
 
 class SearchResponse(TypedDict):
@@ -63,6 +66,25 @@ class SearchService:
             self.manager = SearchAndScrapeManager(
                 search_engine=SerperSearchEngine(),
                 scraper=PlaywrightScraper()
+            )
+            self._initialized = False
+        elif service_type == SearchServiceType.REQUESTS_DDGS.value:
+            logger.info("Using DuckDuckGo for search with Requests for scraping")
+            # Use DDGS for search with Requests for scraping
+            from .search import DdgsSearchEngine
+            self.firecrawl = None
+            self.manager = SearchAndScrapeManager(
+                search_engine=DdgsSearchEngine(),
+                scraper=RequestsScraper()
+            )
+            self._initialized = False
+        elif service_type == SearchServiceType.REQUESTS_SERPER.value:
+            logger.info("Using Serper.dev for search with Requests for scraping")
+            # Use Serper for search with Requests for scraping
+            self.firecrawl = None
+            self.manager = SearchAndScrapeManager(
+                search_engine=SerperSearchEngine(),
+                scraper=RequestsScraper()
             )
             self._initialized = False
         else:

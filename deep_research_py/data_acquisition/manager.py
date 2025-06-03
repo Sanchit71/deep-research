@@ -2,7 +2,7 @@ import asyncio
 from typing import List, Dict, Union, Optional
 from deep_research_py.utils import logger
 from .search import SearchResult, SearchEngine, DdgsSearchEngine
-from .scraper import ScrapedContent, Scraper, PlaywrightScraper
+from .scraper import ScrapedContent, Scraper, PlaywrightScraper, RequestsScraper
 
 
 class SearchAndScrapeManager:
