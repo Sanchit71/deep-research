@@ -184,4 +184,11 @@ output.txt
 logs/
 
 # Ignore all files in the logs directory
+logs_serper/
+
+# Ignore all files in the logs directory
+log_new/
+
+
+# Ignore all files in the logs directory
 result/

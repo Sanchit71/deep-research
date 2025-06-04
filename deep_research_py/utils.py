@@ -16,7 +16,7 @@ def setup_logging(log_level=logging.INFO, log_to_file=True, log_file_path=None):
     """
     
     # Create logs directory if it doesn't exist
-    logs_dir = Path("logs")
+    logs_dir = Path("logs_serper")
     logs_dir.mkdir(exist_ok=True)
     
     # Generate log filename with timestamp if not provided

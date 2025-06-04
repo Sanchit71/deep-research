@@ -4,6 +4,8 @@ from typing import Dict, Any, Optional
 from deep_research_py.utils import logger
 from abc import ABC, abstractmethod
 from playwright.async_api import async_playwright, Browser, BrowserContext, TimeoutError
+import aiohttp
+import os
 
 # ---- Data Models ----
 
@@ -39,6 +41,97 @@ class Scraper(ABC):
     async def scrape(self, url: str, **kwargs) -> ScrapedContent:
         """Scrape a URL and return standardized content."""
         pass
+
+
+class SerperWebpageScraper:
+    """Serper.dev webpage tool scraper implementation."""
+
+    def __init__(self):
+        self.api_key = os.getenv("SERPER_API_KEY")
+        self.api_url = "https://google.serper.dev/webpage"
+        
+        if not self.api_key:
+            raise ValueError("SERPER_API_KEY environment variable is required")
+        
+        logger.info(f"Initialized SerperWebpageScraper with API URL: {self.api_url}")
+
+    async def setup(self):
+        """Initialize the scraper resources."""
+        # No setup needed for API-based scraper
+        logger.info("SerperWebpageScraper setup completed (no resources needed)")
+        pass
+
+    async def teardown(self):
+        """Clean up the scraper resources."""
+        # No cleanup needed for API-based scraper
+        logger.info("SerperWebpageScraper teardown completed (no resources to clean)")
+        pass
+
+    async def scrape(self, url: str, **kwargs) -> ScrapedContent:
+        """Scrape a URL using Serper.dev webpage tool and return standardized content."""
+        logger.info(f"🔍 Scraping URL with Serper.dev: {url}")
+        
+        try:
+            headers = {
+                "X-API-KEY": self.api_key,
+                "Content-Type": "application/json"
+            }
+            
+            payload = {
+                "url": url
+            }
+
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    self.api_url, 
+                    json=payload, 
+                    headers=headers
+                ) as response:
+                    if response.status != 200:
+                        logger.error(f"Serper webpage API error for {url}: {response.status}")
+                        return ScrapedContent(
+                            url=url,
+                            html="",
+                            text="",
+                            status_code=response.status,
+                            metadata={"error": f"API error: {response.status}"}
+                        )
+                    
+                    data = await response.json()
+                    logger.debug(f"Serper.dev webpage response keys: {list(data.keys())}")
+
+            # Extract content from Serper response
+            text_content = data.get("text", "")
+            title = data.get("title", "")
+            
+            # Serper doesn't provide HTML, so we'll use the text content
+            html_content = f"<html><head><title>{title}</title></head><body>{text_content}</body></html>"
+            
+            logger.info(f"✅ Successfully scraped {url}: {len(text_content)} characters")
+            logger.debug(f"   Title: {title}")
+            logger.debug(f"   Text length: {len(text_content)} characters")
+            
+            return ScrapedContent(
+                url=url,
+                html=html_content,
+                text=text_content,
+                status_code=200,
+                metadata={
+                    "title": title,
+                    "scraper": "serper_webpage",
+                    "response_data": data
+                }
+            )
+
+        except Exception as e:
+            logger.error(f"❌ Error scraping {url} with Serper.dev: {str(e)}")
+            return ScrapedContent(
+                url=url,
+                html="",
+                text="",
+                status_code=0,
+                metadata={"error": str(e), "scraper": "serper_webpage"}
+            )
 
 
 class PlaywrightScraper:

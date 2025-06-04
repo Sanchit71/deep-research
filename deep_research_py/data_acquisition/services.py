@@ -19,6 +19,7 @@ class SearchServiceType(Enum):
     FIRECRAWL = "firecrawl"
     PLAYWRIGHT_DDGS = "playwright_ddgs"
     PLAYWRIGHT_SERPER = "playwright_serper"
+    SERPER_ONLY = "serper_only"
 
 
 class SearchResponse(TypedDict):
@@ -55,6 +56,16 @@ class SearchService:
                 api_url=os.environ.get("FIRECRAWL_BASE_URL"),
             )
             self.manager = None
+        elif service_type == SearchServiceType.SERPER_ONLY.value:
+            logger.info("Using Serper.dev for both search and scraping")
+            # Use Serper for both search and scraping
+            from .scraper import SerperWebpageScraper
+            self.firecrawl = None
+            self.manager = SearchAndScrapeManager(
+                search_engine=SerperSearchEngine(),
+                scraper=SerperWebpageScraper()
+            )
+            self._initialized = False
         elif service_type == SearchServiceType.PLAYWRIGHT_SERPER.value:
             logger.info("Using Serper.dev for search with Playwright for scraping")
             # Use Serper for search with Playwright for scraping
@@ -131,6 +142,10 @@ class SearchService:
                         content_length = len(scraped.text)
                         logger.debug(f"   Content length: {content_length} characters")
                         logger.debug(f"   Status code: {scraped.status_code}")
+                        
+                        # Log scraper type for debugging
+                        scraper_type = scraped.metadata.get("scraper", "unknown") if scraped.metadata else "unknown"
+                        logger.debug(f"   Scraper used: {scraper_type}")
                     else:
                         logger.warning(f"   No scraped content available for: {result.url}")
 

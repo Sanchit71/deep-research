@@ -46,9 +46,12 @@ deep_research_py/
 uv tool install deep-research-py && cp .env.example .env
 ```
 
+### Optional: Install Playwright (only needed for `playwright_*` scraper options)
 ```bash
 playwright install
 ```
+
+**Note**: If you're using `serper_only` (recommended), you don't need to install Playwright.
 
 ### Docker with OpenWebUI
 
@@ -72,15 +75,32 @@ Open `.env` and replace placeholder values with your actual API keys
 
 ### Set up environment variables in .env file:
 ```bash
-# Required: OpenAI API key
-# unless you're using DeepSeek or another OpenAI-compliant API.
-OPENAI_API_KEY=your-openai-key-here
+# Required: GEMINI API key (unless using DeepSeek or another provider)
+GEMINI_API_KEY=your-openai-key-here
 
-# Required: Firecrawl API key
+# Scraper Configuration - Choose one of the following options:
+DEFAULT_SCRAPER="serper_only"  # Recommended for simplicity
+
+# Option 1: Serper.dev only (Recommended)
+# Uses Serper.dev for both search and scraping - fastest and most reliable
+SERPER_API_KEY=your-serper-key-here
+
+# Option 2: Firecrawl (Alternative)
+# Uses Firecrawl for both search and scraping
 FIRECRAWL_API_KEY=your-firecrawl-key-here
-# If you want to use your self-hosted Firecrawl, add the following below:
-# FIRECRAWL_BASE_URL="http://localhost:3002"
+# FIRECRAWL_BASE_URL="http://localhost:3002"  # If self-hosting
+
+# Option 3: Mixed approaches (Advanced)
+# DEFAULT_SCRAPER="playwright_serper"  # Serper search + Playwright scraping
+# DEFAULT_SCRAPER="playwright_ddgs"    # DuckDuckGo search + Playwright scraping
 ```
+
+### Scraper Options Explained:
+
+- **`serper_only`** (Recommended): Uses Serper.dev for both search and scraping. Fast, reliable, and requires only a Serper.dev API key.
+- **`firecrawl`**: Uses Firecrawl for both search and scraping. Good alternative but requires Firecrawl API key.
+- **`playwright_serper`**: Uses Serper.dev for search and Playwright for scraping. More resource-intensive but handles complex websites.
+- **`playwright_ddgs`**: Uses DuckDuckGo for search and Playwright for scraping. Free search but requires browser automation.
 
 Note: If you prefer, you can use DeepSeek instead of OpenAI. You can configure it in the `.env` file by setting the relevant API keys and model. Additionally, ensure that you set `DEFAULT_SERVICE` to `"deepseek"` if using DeepSeek or `"openai"` if using OpenAI.
 
@@ -132,7 +152,7 @@ cp .env.example .env
 
 # Set your API keys by editing the .env file
 
-# Install playwright dependencies
+# Optional: Install playwright dependencies (only if using playwright_* scrapers)
 playwright install
 
 # Run the tool
@@ -142,17 +162,24 @@ deep-research
 ## Requirements
 
 - Python 3.9 or higher
-- OpenAI API key (GPT-4 access recommended)
-- Firecrawl API key for web search
-- Dependencies:
-  - openai
-  - firecrawl-py
-  - typer
-  - rich
-  - prompt-toolkit
-  - aiohttp
-  - aiofiles
-  - tiktoken
+- OpenAI API key (GPT-4 access recommended) OR DeepSeek API key
+- **For `serper_only` (Recommended)**: Serper.dev API key
+- **For `firecrawl`**: Firecrawl API key  
+- **For Playwright options**: Playwright installation (see below)
+
+### Core Dependencies:
+- openai
+- typer
+- rich
+- prompt-toolkit
+- aiohttp
+- aiofiles
+- tiktoken
+
+### Optional Dependencies (based on scraper choice):
+- firecrawl-py (for `firecrawl` option)
+- playwright (for `playwright_*` options)
+- duckduckgo-search (for `playwright_ddgs` option)
 
 ## Output
 
@@ -165,8 +192,6 @@ The tool generates:
 ## License
 
 MIT
-
-## Contributing
 
 ## Contributing
 
