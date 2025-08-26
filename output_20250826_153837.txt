@@ -1,0 +1,53 @@
+RESEARCH REPORT
+
+Research Date: 2025-08-26 15:38:37
+Research Duration: 0:01:46.819986
+Goal Achievement Score: 0.60/1.0
+Goal Achieved: False
+Epochs Completed: 2
+Total Learnings: 20
+Total Sources: 18
+Unique Domains: 15
+
+DOMAIN BREAKDOWN
+
+- pmc.ncbi.nlm.nih.gov: 4 URLs
+- www.bcrf.org: 1 URLs
+- www.webmd.com: 1 URLs
+- www.healthline.com: 1 URLs
+- www.cancer.org: 1 URLs
+- bmccancer.biomedcentral.com: 1 URLs
+- www.sciencedirect.com: 1 URLs
+- www.nejm.org: 1 URLs
+- www.komen.org: 1 URLs
+- www.nationalbreastcancer.org: 1 URLs
+- www.nccn.org: 1 URLs
+- jnccn.org: 1 URLs
+- ascopubs.org: 1 URLs
+- education.nccn.org: 1 URLs
+- www2.tri-kobe.org: 1 URLs
+
+==================================================
+
+
+
+SOURCES
+
+- https://www.bcrf.org/about-breast-cancer/breast-cancer-survival-rates/
+- https://www.webmd.com/breast-cancer/breast-cancer-survival-rates
+- https://www.healthline.com/health/metastatic-breast-cancer/mbc-in-your-50s
+- https://www.cancer.org/cancer/types/breast-cancer/understanding-a-breast-cancer-diagnosis/breast-cancer-survival-rates.html
+- https://pmc.ncbi.nlm.nih.gov/articles/PMC5935594/
+- https://pmc.ncbi.nlm.nih.gov/articles/PMC4078652/
+- https://pmc.ncbi.nlm.nih.gov/articles/PMC11916985/
+- https://bmccancer.biomedcentral.com/articles/10.1186/1471-2407-12-161
+- https://www.sciencedirect.com/science/article/pii/S2950247024000586
+- https://www.nejm.org/doi/full/10.1056/NEJMoa052258
+- https://pmc.ncbi.nlm.nih.gov/articles/PMC8661054/
+- https://www.komen.org/breast-cancer/treatment/type/chemotherapy/side-effects/long-term/
+- https://www.nationalbreastcancer.org/breast-cancer-stage-4/
+- https://www.nccn.org/patients/guidelines/content/PDF/breast-invasive-patient.pdf
+- https://jnccn.org/view/journals/jnccn/22/5/article-p331.xml?&redirect=false&print
+- https://ascopubs.org/doi/10.1200/EDBK_360970
+- https://education.nccn.org/sites/default/files/course/2024-02/06_Moran_NCCNbc24_v2.pdf
+- https://www2.tri-kobe.org/nccn/guideline/archive/breast2018/english/breast_v1.pdf
