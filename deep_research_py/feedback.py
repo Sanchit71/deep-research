@@ -1,5 +1,5 @@
 from typing import List, Tuple
-import openai
+from openai import AsyncOpenAI
 import json
 from .prompt import system_prompt
 from .ai.providers import get_client_response
@@ -70,7 +70,7 @@ STRATEGIC CONSIDERATIONS:
 Generate the strategic follow-up questions now:"""
 
 
-async def generate_feedback(query: str, client: openai.OpenAI, model: str) -> Tuple[List[str], List[str]]:
+async def generate_feedback(query: str, client: AsyncOpenAI, model: str) -> Tuple[List[str], List[str]]:
     """Generates follow-up questions and collects answers to clarify research direction."""
 
     logger.info("🤔 Generating enhanced follow-up questions for research clarification")

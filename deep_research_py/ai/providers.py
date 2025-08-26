@@ -21,16 +21,11 @@ def clean_json_string(json_str: str) -> str:
         # Remove any leading/trailing whitespace
         json_str = json_str.strip()
         
-        # Fix common control character issues
-        # Replace problematic control characters with escaped versions
-        json_str = json_str.replace('\n', '\\n')
-        json_str = json_str.replace('\r', '\\r')
-        json_str = json_str.replace('\t', '\\t')
-        json_str = json_str.replace('\b', '\\b')
-        json_str = json_str.replace('\f', '\\f')
-        
-        # Fix unescaped quotes within strings (basic approach)
-        # This is a simplified fix - more complex scenarios might need better handling
+        # Remove markdown code blocks if present
+        if json_str.startswith('```json'):
+            json_str = re.sub(r'^```json\s*', '', json_str)
+        if json_str.endswith('```'):
+            json_str = re.sub(r'\s*```$', '', json_str)
         
         # Ensure the JSON ends properly
         if not json_str.endswith('}'):
@@ -46,72 +41,80 @@ def clean_json_string(json_str: str) -> str:
 def extract_json_from_response(response_text: str) -> dict:
     """Extract and parse JSON from AI response with multiple fallback strategies."""
     
+    logger.debug(f"Attempting to parse JSON from response (length: {len(response_text)})")
+    
     # Strategy 1: Try direct parsing
     try:
-        return json.loads(response_text)
+        result = json.loads(response_text)
+        logger.debug("✅ Direct JSON parsing successful")
+        return result
     except json.JSONDecodeError as e:
         logger.debug(f"Direct JSON parsing failed: {e}")
     
     # Strategy 2: Clean and try again
     try:
         cleaned = clean_json_string(response_text)
-        return json.loads(cleaned)
+        result = json.loads(cleaned)
+        logger.debug("✅ Cleaned JSON parsing successful")
+        return result
     except json.JSONDecodeError as e:
         logger.debug(f"Cleaned JSON parsing failed: {e}")
     
     # Strategy 3: Extract JSON block if wrapped in markdown
     try:
-        # Look for JSON block in markdown
         json_match = re.search(r'```json\s*(\{.*?\})\s*```', response_text, re.DOTALL)
         if json_match:
             json_content = json_match.group(1)
-            return json.loads(json_content)
+            result = json.loads(json_content)
+            logger.debug("✅ Markdown JSON extraction successful")
+            return result
     except json.JSONDecodeError as e:
         logger.debug(f"Markdown JSON extraction failed: {e}")
     
-    # Strategy 4: Find JSON-like content between braces
+    # Strategy 4: Find JSON-like content between braces and fix common issues
     try:
-        # Find the first { and last } to extract JSON content
         start = response_text.find('{')
         end = response_text.rfind('}')
         if start != -1 and end != -1 and end > start:
             json_content = response_text[start:end+1]
-            cleaned = clean_json_string(json_content)
-            return json.loads(cleaned)
+            
+            # Fix the specific issue where reportText has an extra escaped quote at the start
+            json_content = re.sub(r'("reportText"\s*:\s*")\\"', r'\1', json_content)
+            json_content = re.sub(r'("reportMarkdown"\s*:\s*")\\"', r'\1', json_content)
+            
+            result = json.loads(json_content)
+            logger.debug("✅ Brace extraction with fixes successful")
+            return result
     except json.JSONDecodeError as e:
-        logger.debug(f"Brace extraction failed: {e}")
+        logger.debug(f"Brace extraction with fixes failed: {e}")
     
-    # Strategy 5: Manual extraction for specific fields
+    # Strategy 5: Manual extraction for reportText/reportMarkdown
     try:
         result = {}
         
-        # Extract reportMarkdown field specifically
-        if '"reportMarkdown"' in response_text:
-            # Find the start of the reportMarkdown value
-            start_pattern = r'"reportMarkdown"\s*:\s*"'
-            match = re.search(start_pattern, response_text)
-            if match:
-                start_pos = match.end()
-                # Find the end by looking for the closing quote before the next field or end
-                remaining = response_text[start_pos:]
+        # Try reportText first (current prompt format)
+        for field_name in ["reportText", "reportMarkdown"]:
+            if f'"{field_name}"' in response_text:
+                # Enhanced pattern to handle malformed quotes
+                patterns = [
+                    rf'"{field_name}"\s*:\s*"(.*?)"\s*\}}',  # Normal case
+                    rf'"{field_name}"\s*:\s*\\"(.*?)"\s*\}}',  # Extra escaped quote at start
+                    rf'"{field_name}"\s*:\s*"(.*)"$',  # End of string
+                ]
                 
-                # Simple approach: find the last quote before a closing brace
-                # This is not perfect but handles most cases
-                end_pos = len(remaining)
-                for i in range(len(remaining) - 1, -1, -1):
-                    if remaining[i] == '"' and (i == 0 or remaining[i-1] != '\\'):
-                        end_pos = i
-                        break
-                
-                markdown_content = remaining[:end_pos]
-                # Unescape basic characters
-                markdown_content = markdown_content.replace('\\"', '"')
-                markdown_content = markdown_content.replace('\\n', '\n')
-                markdown_content = markdown_content.replace('\\t', '\t')
-                
-                result["reportMarkdown"] = markdown_content
-                logger.info("✅ Successfully extracted reportMarkdown manually")
-                return result
+                for pattern in patterns:
+                    match = re.search(pattern, response_text, re.DOTALL)
+                    if match:
+                        content = match.group(1)
+                        # Unescape content properly
+                        content = content.replace('\\"', '"')
+                        content = content.replace('\\n', '\n')
+                        content = content.replace('\\t', '\t')
+                        content = content.replace('\\\\', '\\')
+                        
+                        result[field_name] = content
+                        logger.info(f"✅ Successfully extracted {field_name} manually using pattern")
+                        return result
         
         # Extract other common fields
         for field in ["learnings", "followUpQuestions", "queries", "questions"]:
@@ -121,7 +124,7 @@ def extract_json_from_response(response_text: str) -> dict:
                 try:
                     array_content = '[' + match.group(1) + ']'
                     result[field] = json.loads(array_content)
-                except:
+                except Exception:
                     # Fallback: split by quotes and clean
                     items = re.findall(r'"([^"]*)"', match.group(1))
                     result[field] = items
@@ -133,7 +136,28 @@ def extract_json_from_response(response_text: str) -> dict:
     except Exception as e:
         logger.debug(f"Manual extraction failed: {e}")
     
-    # Strategy 6: Return empty structure based on expected fields
+    # Strategy 6: Last resort - try to extract any text content
+    try:
+        # Look for any substantial text content that might be the report
+        text_patterns = [
+            r'"reportText"\s*:\s*"([^"]{100,}.*?)"',
+            r'"reportMarkdown"\s*:\s*"([^"]{100,}.*?)"',
+            r'COMPREHENSIVE RESEARCH REPORT(.*?)(?:SOURCES|$)',
+            r'RESEARCH REPORT(.*?)(?:SOURCES|$)',
+        ]
+        
+        for pattern in text_patterns:
+            match = re.search(pattern, response_text, re.DOTALL | re.IGNORECASE)
+            if match:
+                content = match.group(1).strip()
+                if len(content) > 100:  # Ensure we have substantial content
+                    content = content.replace('\\"', '"').replace('\\n', '\n').replace('\\t', '\t')
+                    logger.warning(f"✅ Extracted text content using fallback pattern (length: {len(content)})")
+                    return {"reportText": content}
+    except Exception as e:
+        logger.debug(f"Fallback text extraction failed: {e}")
+    
+    # Final fallback
     logger.warning("All JSON parsing strategies failed, returning empty structure")
     return {}
 
@@ -240,7 +264,7 @@ async def get_client_response(
             # Enhanced JSON parsing with multiple strategies
             try:
                 parsed_response = extract_json_from_response(result)
-                logger.debug(f"   ✅ JSON parsing successful")
+                logger.debug("   ✅ JSON parsing successful")
                 logger.debug(f"   Response keys: {list(parsed_response.keys()) if isinstance(parsed_response, dict) else 'Not a dict'}")
                 return parsed_response
                 
@@ -249,7 +273,7 @@ async def get_client_response(
                 logger.error(f"   Raw response (first 2000 chars): {result[:2000]}...")
                 
                 if attempt < max_retries - 1:
-                    logger.warning(f"   ⚠️ Retrying with different approach...")
+                    logger.warning("   ⚠️ Retrying with different approach...")
                     continue
                 else:
                     # Last attempt - return a basic fallback based on expected content
@@ -294,13 +318,13 @@ async def get_client_response(
                 logger.warning(f"   ⏳ Rate limit hit, waiting {wait_time} seconds before retry {attempt + 1}/{max_retries}")
                 await asyncio.sleep(wait_time)
                 if attempt == max_retries - 1:
-                    logger.error(f"   ❌ Max retries exceeded due to rate limiting")
+                    logger.error("   ❌ Max retries exceeded due to rate limiting")
                     raise e
             else:
                 logger.error(f"   ❌ API call failed: {e}")
                 raise e
 
-    logger.error(f"   ❌ All retry attempts failed")
+    logger.error("   ❌ All retry attempts failed")
     return {"error": "Max retries exceeded"}
 
 

@@ -9,7 +9,7 @@ from rich import print as rprint
 import os
 import logging
 from datetime import datetime
-from pathlib import Path
+
 
 from deep_research_py.deep_research import deep_research, write_final_report
 from deep_research_py.feedback import generate_feedback
@@ -91,9 +91,10 @@ async def main(
     logger.debug(f"   DEFAULT_SERVICE = {os.getenv('DEFAULT_SERVICE')}")
     logger.debug(f"   GEMINI_API_KEY = {'SET' if os.getenv('GEMINI_API_KEY') else 'NOT SET'}")
     
-    console.print(f"[yellow]DEBUG: DEFAULT_SCRAPER = {os.getenv('DEFAULT_SCRAPER')}[/yellow]")
-    console.print(f"[yellow]DEBUG: SERPER_API_KEY = {'SET' if os.getenv('SERPER_API_KEY') else 'NOT SET'}[/yellow]")
-    console.print(f"[yellow]DEBUG: DEFAULT_SERVICE = {os.getenv('DEFAULT_SERVICE')}[/yellow]")
+    # Debug information logged instead of printed to console
+    logger.debug(f"DEFAULT_SCRAPER = {os.getenv('DEFAULT_SCRAPER')}")
+    logger.debug(f"SERPER_API_KEY = {'SET' if os.getenv('SERPER_API_KEY') else 'NOT SET'}")
+    logger.debug(f"DEFAULT_SERVICE = {os.getenv('DEFAULT_SERVICE')}")
 
     service = EnvironmentConfig.get_default_provider()
     console.print(f"🛠️ Using [bold green]{service.upper()}[/bold green] service.")
@@ -221,14 +222,14 @@ async def main(
         console.print(f"\n[yellow]🔗 Sources ({len(research_results['visited_urls'])}):[/yellow]")
         
         # Log URL categories
-        logger.info(f"📋 Final URL breakdown:")
+        logger.info("📋 Final URL breakdown:")
         unique_domains = {}
         for url in research_results['visited_urls']:
             try:
                 from urllib.parse import urlparse
                 domain = urlparse(url).netloc
                 unique_domains[domain] = unique_domains.get(domain, 0) + 1
-            except:
+            except Exception:
                 domain = "unknown"
                 unique_domains[domain] = unique_domains.get(domain, 0) + 1
         
@@ -242,10 +243,10 @@ async def main(
 
         # Save report as plain text file with enhanced metadata
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_file = f"output_{timestamp}.txt"  # Changed from .md to .txt
+        output_file = f"output_{timestamp}.txt"
         
         with open(output_file, "w", encoding='utf-8') as f:
-            f.write(f"RESEARCH REPORT\n\n")
+            f.write("RESEARCH REPORT\n\n")
             f.write(f"Research Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write(f"Research Duration: {research_duration}\n")
             f.write(f"Goal Achievement Score: {research_results['goal_alignment_score']:.2f}/1.0\n")

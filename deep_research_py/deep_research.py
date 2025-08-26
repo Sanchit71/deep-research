@@ -1,7 +1,7 @@
 from typing import List, Dict, TypedDict, Optional
 from dataclasses import dataclass
 import asyncio
-import openai
+from openai import AsyncOpenAI
 from deep_research_py.data_acquisition.services import get_global_search_service
 from .ai.providers import trim_prompt, get_client_response
 from .prompt import system_prompt
@@ -38,7 +38,7 @@ async def generate_user_goal(
     initial_query: str,
     follow_up_answers: List[str],
     follow_up_questions: List[str],
-    client: openai.OpenAI,
+    client: AsyncOpenAI,
     model: str,
 ) -> UserGoal:
     """Generate a structured user goal based on initial query and follow-up Q&A."""
@@ -101,7 +101,7 @@ async def evaluate_goal_alignment(
     user_goal: UserGoal,
     current_learnings: List[str],
     epoch: int,
-    client: openai.OpenAI,
+    client: AsyncOpenAI,
     model: str,
 ) -> Dict[str, any]:
     """Evaluate how well current learnings align with the user's goal."""
@@ -168,7 +168,7 @@ async def evaluate_goal_alignment(
 
 async def generate_serp_queries(
     query: str,
-    client: openai.OpenAI,
+    client: AsyncOpenAI,
     model: str,
     num_queries: int = 3,
     learnings: Optional[List[str]] = None,
@@ -223,7 +223,7 @@ async def generate_serp_queries(
 async def process_serp_result(
     query: str,
     search_result: SearchResponse,
-    client: openai.OpenAI,
+    client: AsyncOpenAI,
     model: str,
     num_learnings: int = 3,
     num_follow_up_questions: int = 3,
@@ -323,7 +323,7 @@ async def goal_driven_research(
     breadth: int,
     max_epochs: int,
     concurrency: int,
-    client: openai.OpenAI,
+    client: AsyncOpenAI,
     model: str,
 ) -> ResearchResult:
     """
@@ -557,7 +557,7 @@ async def deep_research(
     breadth: int,
     depth: int,  # Keep for backward compatibility, but convert to max_epochs
     concurrency: int,
-    client: openai.OpenAI,
+    client: AsyncOpenAI,
     model: str,
     follow_up_questions: List[str] = None,
     follow_up_answers: List[str] = None,
@@ -615,7 +615,7 @@ async def write_final_report(
     prompt: str,
     learnings: List[str],
     visited_urls: List[str],
-    client: openai.OpenAI,
+    client: AsyncOpenAI,
     model: str,
 ) -> str:
     """Generate final report based on all research learnings as plain text."""
